@@ -12,6 +12,7 @@ import os
 import glob
 import argparse
 import time
+import json
 from collections import defaultdict
 import xml.etree.ElementTree as ET
 
@@ -27,8 +28,7 @@ def dataset_mappings():
         map_n[i] = j
     for i, j in zip(ALTERNATIVE_NAMES, range(len(ALTERNATIVE_NAMES))):
         map_n[i] = j
-    map_vis = {'1': 2, '0': 0}
-    return map_n, map_vis
+    return map_n
 
 
 def cli():
@@ -37,6 +37,8 @@ def cli():
                         help='dataset directory')
     parser.add_argument('--dir_out', default='data/animalpose/annotations',
                         help='where to save xml annotations and output json ')
+    parser.add_argument('--sample', action='store_true',
+                        help='Whether to only process the first 50 images')
     args = parser.parse_args()
     return args
 
@@ -45,40 +47,54 @@ class VocToCoco:
 
     json_file = {}
     map_cat = {cat: el+1 for el, cat in enumerate(CATEGORIES)}
-    map_names, map_vis = dataset_mappings()
+    map_names = dataset_mappings()
     n_kps = len(ANIMAl_KEYPOINTS)
     cnt_kps = [0] * n_kps
 
-    def __init__(self, dir_dataset, dir_out):
+    def __init__(self, dir_dataset, dir_out, args):
         """
         :param dir_dataset: Original dataset directory
         :param dir_out: Processed dataset directory
         """
         self.dir_dataset = dir_dataset
         self.dir_out = dir_out
+        self.sample = args.sample
 
     def process(self):
         # for phase, im_paths in self.splits.items():  # Train and Val
+        phase = 'train'
         cnt_images = 0
         cnt_instances = 0
         self.cnt_kps = [0] * len(ANIMAl_KEYPOINTS)
         self.initiate_json()  # Initiate json file at each phase
-        cnt = 0
+
         for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
             dir_ann = os.path.join(folder, 'annotations')
             for cat in CATEGORIES:
                 paths = glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml'))
                 for xml_path in paths:
                     im_path, im_id = self._extract_filename(xml_path)
-                    im_size = self._process_image(im_path, im_id, cat)
+                    self._process_image(im_path, im_id)
                     cnt_images += 1
-                    self._process_annotation(xml_path, im_size, im_id)
+                    self._process_annotation(xml_path, im_id)
                     cnt_instances += 1
 
-    def _process_image(self, im_path, im_id, cat):
+                    # Save
+        name = 'animalpose_keypoints_' + str(self.n_kps) + '_'
+        if self.sample:
+            name = name + 'sample_'
+
+        path_json = os.path.join(self.dir_out, name + phase + '.json')
+        with open(path_json, 'w') as outfile:
+            json.dump(self.json_file, outfile)
+        print(f'Phase:{phase}')
+        print(f'Average number of keypoints labelled: {sum(self.cnt_kps) / cnt_instances:.1f} / {self.n_kps}')
+        print(f'Saved {cnt_instances} instances over {cnt_images} images ')
+        print(f'JSON PATH:  {path_json}')
+
+    def _process_image(self, im_path, im_id):
         """Update image field in json file"""
         file_name = os.path.split(im_path)[1]
-        im_name = os.path.splitext(file_name)[0]
 
         # Assert for different categorization
 
@@ -93,9 +109,8 @@ class VocToCoco:
             'date_captured': "unknown",
             'width': width,
             'height': height})
-        return (width, height), im_name, im_id
 
-    def _process_annotation(self, xml_path, im_id, im_size):
+    def _process_annotation(self, xml_path, im_id):
         """Process single instance"""
         tree = ET.parse(xml_path)
         root = tree.getroot()
@@ -136,10 +151,10 @@ class VocToCoco:
         kps_out = np.zeros((self.n_kps, 3))
         for kp in kps_list:
             n = self.map_names[kp.attrib['name']]
-            if n < 100:
+            if n < 100 and kp.attrib['visible'] == '1':
                 kps_out[n, 0] = float(kp.attrib['x'])
                 kps_out[n, 1] = float(kp.attrib['y'])
-                kps_out[n, 2] = self.map_vis[kp.attrib['visible']]
+                kps_out[n, 2] = 2
                 cnt += 1
                 self.cnt_kps[n] += 1
         kps_out = list(kps_out.reshape((-1,)))
@@ -153,14 +168,13 @@ class VocToCoco:
                                       date_created=time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime()),
                                       description="Conversion of AnimalPose dataset into MS-COCO format")
 
-        self.json_file["categories"] = [dict(name='car',
+        self.json_file["categories"] = [dict(name='animal',
                                              id=1,
                                              skeleton=[],
-                                             supercategory='car',
+                                             supercategory='animal',
                                              keypoints=[])]
         self.json_file["images"] = []
         self.json_file["annotations"] = []
-
 
     def _extract_filename(self, xml_path):
         """
@@ -182,7 +196,7 @@ class VocToCoco:
         else:
             basename = os.path.splitext(sub_dirs[-1])[0]
             num = int(basename[2:])
-            im_id = int(str(self.map_cat[cat]) + basename[2:])
+            im_id = int(str(999) + str(self.map_cat[cat]) + basename[2:])
             if cat == 'sheep' and num == 65:
                 ext = '.png'
             elif cat == 'sheep' and (num <= 97 or num >= 190):
@@ -190,12 +204,12 @@ class VocToCoco:
             else:
                 ext = '.jpeg'
             im_path = os.path.join(im_dir, cat, basename + ext)
-
+        assert isinstance(im_id, int), "im id is not numeric"
         return im_path, im_id
 
 def main():
     args = cli()
-    voc_coco = VocToCoco(args.dir_data, args.dir_out)
+    voc_coco = VocToCoco(args.dir_data, args.dir_out, args)
     voc_coco.process()
 
 

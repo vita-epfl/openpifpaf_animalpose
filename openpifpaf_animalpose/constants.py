@@ -48,3 +48,6 @@ ALTERNATIVE_NAMES = [
     'L_B_Paw',      # 19
     'R_B_Paw',      # 20
 ]
+
+
+SKELETON = []
