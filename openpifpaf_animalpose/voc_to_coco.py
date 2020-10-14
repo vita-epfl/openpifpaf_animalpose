@@ -18,7 +18,17 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from PIL import Image
 
-CATEGORIES = ('cat', 'cow' 'dog', 'sheep', 'horse')
+from .constants import CATEGORIES, ANIMAl_KEYPOINTS, ALTERNATIVE_NAMES
+
+def dataset_mappings():
+    """Map the two names to 0 n-1"""
+    map_n = defaultdict(lambda: 100)  # map to 100 the keypoints not used
+    for i, j in zip(ANIMAl_KEYPOINTS, range(len(ANIMAl_KEYPOINTS))):
+        map_n[i] = j
+    for i, j in zip(ALTERNATIVE_NAMES, range(len(ALTERNATIVE_NAMES))):
+        map_n[i] = j
+    map_vis = {'1': 2, '0': 0}
+    return map_n, map_vis
 
 
 def cli():
@@ -35,8 +45,11 @@ class VocToCoco:
 
     json_file = {}
     map_cat = {cat: el+1 for el, cat in enumerate(CATEGORIES)}
+    map_names, map_vis = dataset_mappings()
+    n_kps = len(ANIMAl_KEYPOINTS)
+    cnt_kps = [0] * n_kps
 
-    def __init__(self, dir_dataset, dir_out, args):
+    def __init__(self, dir_dataset, dir_out):
         """
         :param dir_dataset: Original dataset directory
         :param dir_out: Processed dataset directory
@@ -48,7 +61,7 @@ class VocToCoco:
         # for phase, im_paths in self.splits.items():  # Train and Val
         cnt_images = 0
         cnt_instances = 0
-        cnt_kps = [0] * 66
+        self.cnt_kps = [0] * len(ANIMAl_KEYPOINTS)
         self.initiate_json()  # Initiate json file at each phase
         cnt = 0
         for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
@@ -102,10 +115,6 @@ class VocToCoco:
         kp_obj = root.findall('keypoints')
         assert len(kp_obj) <= 1, "multiple elements in a single annotation file not supported"
         kps_list = kp_obj[0].findall('keypoint')
-        try:
-            assert 17 <= len(kps_list) <= 20, "number of keypoints not recognized"
-        except AssertionError:
-            aa = 5
 
         kps, num = self._process_keypoint(kps_list)
 
@@ -121,12 +130,20 @@ class VocToCoco:
             'segmentation': []})
         return None
 
-
     def _process_keypoint(self, kps_list):
+        """Extract single keypoint from XML"""
+        cnt = 0
+        kps_out = np.zeros((self.n_kps, 3))
         for kp in kps_list:
-            aa = 5
-        return None, None
-
+            n = self.map_names[kp.attrib['name']]
+            if n < 100:
+                kps_out[n, 0] = float(kp.attrib['x'])
+                kps_out[n, 1] = float(kp.attrib['y'])
+                kps_out[n, 2] = self.map_vis[kp.attrib['visible']]
+                cnt += 1
+                self.cnt_kps[n] += 1
+        kps_out = list(kps_out.reshape((-1,)))
+        return kps_out, cnt
 
     def initiate_json(self):
         """
@@ -176,22 +193,9 @@ class VocToCoco:
 
         return im_path, im_id
 
-def get_coco_annotation_from_obj(obj, label2id):
-
-    ann = {
-        'area': o_width * o_height,
-        'iscrowd': 0,
-        'bbox': [xmin, ymin, o_width, o_height],
-        'category_id': category_id,
-        'ignore': 0,
-        'segmentation': []  # This script is not for segmentation
-    }
-    return ann
-
-
 def main():
     args = cli()
-    voc_coco = VocToCoco(args.dir_data, args.dir_out, args)
+    voc_coco = VocToCoco(args.dir_data, args.dir_out)
     voc_coco.process()
 
 
