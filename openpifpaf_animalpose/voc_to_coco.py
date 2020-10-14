@@ -58,7 +58,9 @@ class VocToCoco:
                 for xml_path in paths:
                     im_path, im_id = self._extract_filename(xml_path)
                     im_size = self._process_image(im_path, im_id, cat)
+                    cnt_images += 1
                     self._process_annotation(xml_path, im_size, im_id)
+                    cnt_instances += 1
 
     def _process_image(self, im_path, im_id, cat):
         """Update image field in json file"""
@@ -84,46 +86,46 @@ class VocToCoco:
         """Process single instance"""
         tree = ET.parse(xml_path)
         root = tree.getroot()
-        box = root.findall('visible_bounds')
-        assert len(box) <=1, "multiple elements in a single annotation file not supported"
-        xmin = int(box[0].attrib['xmin']) - 1
-        width = int(box[0].attrib['width'])
-        height = int(box[0].attrib['height'])
+        box_obj = root.findall('visible_bounds')
+        assert len(box_obj) <= 1, "multiple elements in a single annotation file not supported"
+
+        x_min = round(float((box_obj[0].attrib['xmin']))) - 1
+
+        width = round(float(box_obj[0].attrib['width']))
+        height = round(float(box_obj[0].attrib['height']))
         try:
-            ymin = int(box[0].attrib['ymin']) - 1
+            y_min = round(float(box_obj[0].attrib['ymin'])) - 1
         except KeyError:
-            ymin = int(box[0].attrib['xmax']) - 1
+            y_min = round(float(box_obj[0].attrib['xmax'])) - 1
+        box = [x_min, y_min, width, height]
 
-        all_kps = 0
-        txt_path = None
-        # all_kps = np.array(data)  # [#, x, y]
+        kp_obj = root.findall('keypoints')
+        assert len(kp_obj) <= 1, "multiple elements in a single annotation file not supported"
+        kps_list = kp_obj[0].findall('keypoint')
+        try:
+            assert 17 <= len(kps_list) <= 20, "number of keypoints not recognized"
+        except AssertionError:
+            aa = 5
 
-        # Enlarge box
-        # box_tight = [np.min(all_kps[:, 1]), np.min(all_kps[:, 2]), np.max(all_kps[:, 1]), np.max(all_kps[:, 2])]
-        # w, h = box_tight[2] - box_tight[0], box_tight[3] - box_tight[1]
-        # x_o = max(box_tight[0] - (w / 10), 0)
-        # y_o = max(box_tight[1] - (h / 10), 0)
-        # x_i = min(x_o + (w / 4) + w, im_size[0])
-        # y_i = min(y_o + (h / 4) + h, im_size[1])
-        # box = [int(x_o), int(y_o), int(x_i - x_o), int(y_i - y_o)]  # (x, y, w, h)
-        #
-        # kps, num = self._transform_keypoints(all_kps)
-        # txt_id = os.path.splitext(txt_path.split(sep='_')[-1])[0]
-        # car_id = int(str(im_id) + str(int(txt_id)))  # include at the end of the number the specific annotation id
-        # self.json_file["annotations"].append({
-        #     'image_id': im_id,
-        #     'category_id': 1,
-        #     'iscrowd': 0,
-        #     'id': car_id,
-        #     'area': box[2] * box[3],
-        #     'bbox': box,
-        #     'num_keypoints': num,
-        #     'keypoints': kps,
-        #     'segmentation': []})
-        # # Stats
-        # for num in data[0]:
-        #     cnt_kps[num] += 1
+        kps, num = self._process_keypoint(kps_list)
+
+        self.json_file["annotations"].append({
+            'image_id': im_id,
+            'category_id': 1,
+            'iscrowd': 0,
+            'id': im_id,
+            'area': box[2] * box[3],
+            'bbox': box,
+            'num_keypoints': num,
+            'keypoints': kps,
+            'segmentation': []})
         return None
+
+
+    def _process_keypoint(self, kps_list):
+        for kp in kps_list:
+            aa = 5
+        return None, None
 
 
     def initiate_json(self):
@@ -154,16 +156,12 @@ class VocToCoco:
         im_dir = os.path.join(*sub_dirs[:-3], 'images')
         assert folder in ('part1', 'part2')
 
-        # try:
-        #     im_id = int(im_name.split(sep='_')[1])
-        # except IndexError:
-        #     im_id = int(str(self.map_cat[cat]) + (im_name[2:]))
-
         if folder == 'part1':
-            basename = os.path.splitext(sub_dirs[-1])[0][:-2]
+            splits = os.path.splitext(sub_dirs[-1])[0].split(sep='_')
+            basename = splits[0] + '_' + splits[1]
             ext = '.jpg'
             im_path = os.path.join(im_dir, basename + ext)
-            im_id = int(basename.split(sep='_')[1])
+            im_id = int(splits[1])
         else:
             basename = os.path.splitext(sub_dirs[-1])[0]
             num = int(basename[2:])
