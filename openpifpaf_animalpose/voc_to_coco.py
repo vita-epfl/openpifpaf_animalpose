@@ -19,13 +19,13 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from PIL import Image
 
-from .constants import CATEGORIES, ANIMAl_KEYPOINTS, ALTERNATIVE_NAMES, ANIMAL_SKELETON
+from .constants import _CATEGORIES, ANIMAL_KEYPOINTS, ALTERNATIVE_NAMES, ANIMAL_SKELETON
 
 
 def dataset_mappings():
     """Map the two names to 0 n-1"""
     map_n = defaultdict(lambda: 100)  # map to 100 the keypoints not used
-    for i, j in zip(ANIMAl_KEYPOINTS, range(len(ANIMAl_KEYPOINTS))):
+    for i, j in zip(ANIMAL_KEYPOINTS, range(len(ANIMAL_KEYPOINTS))):
         map_n[i] = j
     for i, j in zip(ALTERNATIVE_NAMES, range(len(ALTERNATIVE_NAMES))):
         map_n[i] = j
@@ -47,9 +47,9 @@ def cli():
 class VocToCoco:
 
     json_file = {}
-    map_cat = {cat: el+1 for el, cat in enumerate(CATEGORIES)}
+    map_cat = {cat: el+1 for el, cat in enumerate(_CATEGORIES)}
     map_names = dataset_mappings()
-    n_kps = len(ANIMAl_KEYPOINTS)
+    n_kps = len(ANIMAL_KEYPOINTS)
     cnt_kps = [0] * n_kps
 
     def __init__(self, dir_dataset, dir_out, args):
@@ -67,7 +67,7 @@ class VocToCoco:
             paths = splits[phase]
             cnt_images = 0
             cnt_instances = 0
-            self.cnt_kps = [0] * len(ANIMAl_KEYPOINTS)
+            self.cnt_kps = [0] * len(ANIMAL_KEYPOINTS)
             self.initiate_json()  # Initiate json file at each phase
 
             for xml_path in paths:
@@ -209,7 +209,7 @@ class VocToCoco:
         paths = []
         for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
             dir_ann = os.path.join(folder, 'annotations')
-            for cat in CATEGORIES:
+            for cat in _CATEGORIES:
                 paths.extend(glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml')))
         train_n = len(paths) - val_n
         paths = np.asarray(paths)
