@@ -1,7 +1,7 @@
 import openpifpaf
 
-from . import apollo_kp
+from . import animal_kp
 
 
 def register():
-    openpifpaf.DATAMODULES['apollo'] = apollo_kp.ApolloKp
+    openpifpaf.DATAMODULES['animal'] = animal_kp.AnimalKp
