@@ -19,7 +19,8 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from PIL import Image
 
-from .constants import CATEGORIES, ANIMAl_KEYPOINTS, ALTERNATIVE_NAMES
+from .constants import CATEGORIES, ANIMAl_KEYPOINTS, ALTERNATIVE_NAMES, ANIMAL_SKELETON
+
 
 def dataset_mappings():
     """Map the two names to 0 n-1"""
@@ -61,43 +62,37 @@ class VocToCoco:
         self.sample = args.sample
 
     def process(self):
-        # for phase, im_paths in self.splits.items():  # Train and Val
-        phase = 'train'
-        cnt_images = 0
-        cnt_instances = 0
-        self.cnt_kps = [0] * len(ANIMAl_KEYPOINTS)
-        self.initiate_json()  # Initiate json file at each phase
+        splits = self._split_train_val()
+        for phase in ('train', 'val'):
+            paths = splits[phase]
+            cnt_images = 0
+            cnt_instances = 0
+            self.cnt_kps = [0] * len(ANIMAl_KEYPOINTS)
+            self.initiate_json()  # Initiate json file at each phase
 
-        for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
-            dir_ann = os.path.join(folder, 'annotations')
-            for cat in CATEGORIES:
-                paths = glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml'))
-                for xml_path in paths:
-                    im_path, im_id = self._extract_filename(xml_path)
-                    self._process_image(im_path, im_id)
-                    cnt_images += 1
-                    self._process_annotation(xml_path, im_id)
-                    cnt_instances += 1
+            for xml_path in paths:
+                im_path, im_id = self._extract_filename(xml_path)
+                self._process_image(im_path, im_id)
+                cnt_images += 1
+                self._process_annotation(xml_path, im_id)
+                cnt_instances += 1
 
-                    # Save
-        name = 'animalpose_keypoints_' + str(self.n_kps) + '_'
-        if self.sample:
-            name = name + 'sample_'
+            # Save
+            name = 'animalpose_keypoints_' + str(self.n_kps) + '_'
+            if self.sample:
+                name = name + 'sample_'
 
-        path_json = os.path.join(self.dir_out, name + phase + '.json')
-        with open(path_json, 'w') as outfile:
-            json.dump(self.json_file, outfile)
-        print(f'Phase:{phase}')
-        print(f'Average number of keypoints labelled: {sum(self.cnt_kps) / cnt_instances:.1f} / {self.n_kps}')
-        print(f'Saved {cnt_instances} instances over {cnt_images} images ')
-        print(f'JSON PATH:  {path_json}')
+            path_json = os.path.join(self.dir_out, name + phase + '.json')
+            with open(path_json, 'w') as outfile:
+                json.dump(self.json_file, outfile)
+            print(f'Phase:{phase}')
+            print(f'Average number of keypoints labelled: {sum(self.cnt_kps) / cnt_instances:.1f} / {self.n_kps}')
+            print(f'Saved {cnt_instances} instances over {cnt_images} images ')
+            print(f'JSON PATH:  {path_json}')
 
     def _process_image(self, im_path, im_id):
         """Update image field in json file"""
         file_name = os.path.split(im_path)[1]
-
-        # Assert for different categorization
-
         im = Image.open(im_path)
         width, height = im.size
 
@@ -160,22 +155,6 @@ class VocToCoco:
         kps_out = list(kps_out.reshape((-1,)))
         return kps_out, cnt
 
-    def initiate_json(self):
-        """
-        Initiate Json for training and val phase
-        """
-        self.json_file["info"] = dict(url="https://github.com/vita-epfl/openpifpaf",
-                                      date_created=time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime()),
-                                      description="Conversion of AnimalPose dataset into MS-COCO format")
-
-        self.json_file["categories"] = [dict(name='animal',
-                                             id=1,
-                                             skeleton=[],
-                                             supercategory='animal',
-                                             keypoints=[])]
-        self.json_file["images"] = []
-        self.json_file["annotations"] = []
-
     def _extract_filename(self, xml_path):
         """
         Manage all the differences between the 2 annotated parts and all the exceptions of Part 2
@@ -206,6 +185,38 @@ class VocToCoco:
             im_path = os.path.join(im_dir, cat, basename + ext)
         assert isinstance(im_id, int), "im id is not numeric"
         return im_path, im_id
+
+    def initiate_json(self):
+        """
+        Initiate Json for training and val phase
+        """
+        self.json_file["info"] = dict(url="https://github.com/vita-epfl/openpifpaf",
+                                      date_created=time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime()),
+                                      description="Conversion of AnimalPose dataset into MS-COCO format")
+
+        self.json_file["categories"] = [dict(name='animal',
+                                             id=1,
+                                             skeleton=ANIMAL_SKELETON,
+                                             supercategory='animal',
+                                             keypoints=[])]
+        self.json_file["images"] = []
+        self.json_file["annotations"] = []
+
+    def _split_train_val(self):
+        """Random train val split"""
+        val_n = 1117
+        np.random.seed(1)
+        paths = []
+        for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
+            dir_ann = os.path.join(folder, 'annotations')
+            for cat in CATEGORIES:
+                paths.extend(glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml')))
+        train_n = len(paths) - val_n
+        paths = np.asarray(paths)
+        np.random.shuffle(paths)
+        splits = {'train': paths[:train_n].tolist(), 'val': paths[train_n:].tolist()}
+        return splits
+
 
 def main():
     args = cli()

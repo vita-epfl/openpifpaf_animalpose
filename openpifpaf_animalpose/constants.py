@@ -1,6 +1,6 @@
 
 
-CATEGORIES = ('cat', 'cow' 'dog', 'sheep', 'horse')
+CATEGORIES = ('cat', 'cow', 'dog', 'sheep', 'horse')
 
 ANIMAl_KEYPOINTS = [
     'Nose',         # 1
@@ -50,4 +50,7 @@ ALTERNATIVE_NAMES = [
 ]
 
 
-SKELETON = []
+ANIMAL_SKELETON = [
+    (1, 2), (1, 3), (2, 3), (2, 4), (3, 5), (4, 8), (4, 6), (8, 9), (8, 6), (5, 6), (5, 8), (8, 10), (9, 10),
+    (9, 13), (13, 17), (10, 14), (14, 18), (8, 11), (8, 12), (11, 7), (12, 7), (11, 15), (15, 19), (12, 16), (16, 20)
+]
