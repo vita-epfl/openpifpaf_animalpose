@@ -71,8 +71,9 @@ ALTERNATIVE_NAMES = [
 
 
 ANIMAL_SKELETON = [
-    (1, 2), (1, 3), (2, 3), (2, 4), (3, 5), (4, 8), (4, 6), (8, 9), (8, 6), (5, 6), (5, 8), (8, 10), (9, 10),
-    (9, 13), (13, 17), (10, 14), (14, 18), (8, 11), (8, 12), (11, 7), (12, 7), (11, 15), (15, 19), (12, 16), (16, 20)
+    (1, 2), (1, 3), (2, 3), (2, 4), (3, 5), (4, 8), (4, 6), (8, 9), (8, 6), (5, 6), (6,9), (6, 10), (5, 8), (8, 10),
+    (9, 10), (9, 11), (9, 13), (13, 17), (10, 12), (10, 14), (14, 18), (8, 11), (11,12), (8, 12), (11, 7), (12, 7),
+    (11, 15), (15, 19), (12, 16), (16, 20)
 ]
 
 ANIMAL_SIGMAS = [
@@ -100,7 +101,6 @@ ANIMAL_SIGMAS = [
 
 split, error = divmod(len(ANIMAL_KEYPOINTS), 4)
 ANIMAL_SCORE_WEIGHTS = [5.0] * split + [3.0] * split + [1.0] * split + [0.5] * split + [0.1] * error
-assert len(ANIMAL_SCORE_WEIGHTS) == len(ANIMAL_KEYPOINTS)
 
 ANIMAL_CATEGORIES = ['animal']
 
@@ -110,24 +110,26 @@ ANIMAL_POSE = np.array([
     [0.35, 4.7, 2.0],  # 'right_eye',       # 3
     [-0.7, 4.5, 2.0],  # 'left_ear',        # 4
     [0.7, 4.5, 2.0],  # 'right_ear',       # 5
-    [1.4, 7.0, 2.0],  # 'throat',            # 6
-    [7, 2.0, 2.0],  # 'tail',                   # 7
+    [0.2, 3.7, 2.0],  # 'throat',            # 6
+    [7.5, 2.0, 2.0],  # 'tail',                   # 7
     [2, 4.0, 2.0],  # 'withers',         # 8
     [3.5, 3.0, 2.0],  # 'L_F_elbow',      # 9
     [3, 3.2, 2.0],  # 'R_F_elbow',     # 10
-    [6.5, 3.1, 2.0],  # 'L_B_elbow',      # 11
-    [6, 3.3, 2.0],  # 'R_B_elbow',     # 12
-    [3.5, 3.0, 2.0],  # 'left_elbow',      # 8
-    [3, 3.2, 2.0],  # 'right_elbow',     # 9
-    [3.5, 1.0, 2.0],  # 'L_F_Knee',     # 13
-    [3, 1.2, 2.0],  # 'R_F_Knee',     # 14
-    [6.5, 1.1, 2.0],  # 'L_B_Knee',     # 15
-    [6, 1.3, 2.0],  # 'R_B_Knee',     # 16
-    [3.5, -1.0, 2.0],  # 'L_F_Paw',      # 17
-    [3, -1.2, 2.0],  # 'R_F_Paw',      # 18
-    [6.5, -1.1, 2.0],  # 'L_B_Paw',      # 19
-    [6, -1.3, 2.0],  # 'R_B_Paw',      # 20
+    [6, 3.1, 2.0],  # 'L_B_elbow',      # 11
+    [6.5, 3.3, 2.0],  # 'R_B_elbow',     # 12
+    [3.5, 1.5, 2.0],  # 'L_F_Knee',     # 13
+    [3, 1.7, 2.0],  # 'R_F_Knee',     # 14
+    [6, 1.6, 2.0],  # 'L_B_Knee',     # 15
+    [6.5, 1.8, 2.0],  # 'R_B_Knee',     # 16
+    [3.5, 0.0, 2.0],  # 'L_F_Paw',      # 17
+    [3, 0.2, 2.0],  # 'R_F_Paw',      # 18
+    [6, 0.1, 2.0],  # 'L_B_Paw',      # 19
+    [6.5, 0.3, 2.0],  # 'R_B_Paw',      # 20
 ])
+
+
+assert len(ANIMAL_POSE) == len(ANIMAL_KEYPOINTS) == len(ALTERNATIVE_NAMES) == len(ANIMAL_SIGMAS) \
+       == len(ANIMAL_SCORE_WEIGHTS), "dimensions!"
 
 
 def draw_ann(ann, *, keypoint_painter, filename=None, margin=0.5, aspect=None, **kwargs):
@@ -162,11 +164,11 @@ def draw_skeletons(pose):
     )
 
     show.KeypointPainter.show_joint_scales = True
-    keypoint_painter = show.KeypointPainter(color_connections=True, linewidth=1)
+    keypoint_painter = show.KeypointPainter()
 
     ann = Annotation(keypoints=ANIMAL_KEYPOINTS, skeleton=ANIMAL_SKELETON, score_weights=ANIMAL_SCORE_WEIGHTS)
     ann.set(pose, np.array(ANIMAL_SIGMAS) * scale)
-    draw_ann(ann, filename='docs/skeleton_car.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='docs/skeleton_animal.png', keypoint_painter=keypoint_painter)
 
 
 def print_associations():
