@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 
 from .constants import _CATEGORIES, ANIMAL_KEYPOINTS, ALTERNATIVE_NAMES, ANIMAL_SKELETON
 
@@ -89,6 +90,7 @@ class VocToCoco:
             print(f'Average number of keypoints labelled: {sum(self.cnt_kps) / cnt_instances:.1f} / {self.n_kps}')
             print(f'Saved {cnt_instances} instances over {cnt_images} images ')
             print(f'JSON PATH:  {path_json}')
+            histogram(self.cnt_kps)
 
     def _process_image(self, im_path, im_id):
         """Update image field in json file"""
@@ -216,6 +218,16 @@ class VocToCoco:
         np.random.shuffle(paths)
         splits = {'train': paths[:train_n].tolist(), 'val': paths[train_n:].tolist()}
         return splits
+
+
+def histogram(cnt_kps):
+    bins = np.arange(len(cnt_kps))
+    data = np.array(cnt_kps)
+    plt.figure()
+    plt.bar(bins, data)
+    plt.xticks(np.arange(len(cnt_kps), step=5))
+    plt.show()
+    plt.close()
 
 
 def main():
