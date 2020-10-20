@@ -31,6 +31,7 @@ HFLIP = {
     'L_eye': 'R_eye',
     'R_eye': 'L_eye',
     'L_ear': 'R_ear',
+    'R_ear': 'L_ear',
     'L_F_elbow': 'R_F_elbow',
     'R_F_elbow': 'L_F_elbow',
     'L_B_elbow': 'R_B_elbow',
@@ -41,8 +42,8 @@ HFLIP = {
     'R_B_knee': 'L_B_knee',
     'L_F_paw': 'R_F_paw',
     'R_F_paw': 'L_F_paw',
-    'L_B_paw': 'R_F_paw',
-    'R_B_paw': 'L_F_paw',
+    'L_B_paw': 'R_B_paw',
+    'R_B_paw': 'L_B_paw',
 }
 
 
