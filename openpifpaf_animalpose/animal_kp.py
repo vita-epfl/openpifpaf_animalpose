@@ -30,11 +30,11 @@ class AnimalKp(DataModule):
     _testdev2017_annotations = 'data-mscoco/annotations/image_info_test-dev2017.json'
     _test2017_image_dir = 'data-mscoco/images/test2017/'
 
-    train_annotations = 'data/animal-coco/annotations/animal_keypoints_24_train.json'
-    val_annotations = 'data/animal-coco/annotations/animal_keypoints_24_val.json'
+    train_annotations = 'data/animalpose/annotations/animal_keypoints_20_train.json'
+    val_annotations = 'data/animalpose/annotations/animal_keypoints_20_val.json'
     eval_annotations = val_annotations
-    train_image_dir = 'data/animal-coco/images/train/'
-    val_image_dir = 'data/animal-coco/images/val/'
+    train_image_dir = 'data/animalpose/images/train/'
+    val_image_dir = 'data/animalpose/images/val/'
     eval_image_dir = val_image_dir
 
     n_images = None

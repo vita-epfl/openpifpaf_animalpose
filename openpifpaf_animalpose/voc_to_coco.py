@@ -14,6 +14,7 @@ import argparse
 import time
 import json
 from collections import defaultdict
+from shutil import copyfile
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -37,10 +38,12 @@ def cli():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--dir_data', default='data/animalpose',
                         help='dataset directory')
-    parser.add_argument('--dir_out', default='data/animalpose/annotations',
+    parser.add_argument('--dir_out', default='data/animalpose',
                         help='where to save xml annotations and output json ')
     parser.add_argument('--sample', action='store_true',
                         help='Whether to only process the first 50 images')
+    parser.add_argument('--split_images', action='store_true',
+                        help='Whether to copy images into train val split folder')
     args = parser.parse_args()
     return args
 
@@ -59,13 +62,19 @@ class VocToCoco:
         :param dir_out: Processed dataset directory
         """
         self.dir_dataset = dir_dataset
-        self.dir_out = dir_out
+        self.dir_out_im = os.path.join(dir_out, 'images')
+        self.dir_out_ann = os.path.join(dir_out, 'annotations')
+        assert os.path.isdir(self.dir_out_im), "Images output directory not found"
+        assert os.path.isdir(self.dir_out_ann), "Annotations directory not found"
         self.sample = args.sample
+        self.split_images = args.split_images
 
     def process(self):
         splits = self._split_train_val()
         for phase in ('train', 'val'):
             paths = splits[phase]
+            if self.sample:
+                paths = paths[:50]
             cnt_images = 0
             cnt_instances = 0
             self.cnt_kps = [0] * len(ANIMAL_KEYPOINTS)
@@ -78,19 +87,24 @@ class VocToCoco:
                 self._process_annotation(xml_path, im_id)
                 cnt_instances += 1
 
+                # Split the image in a new folder
+                if self.split_images:
+                    dst = os.path.join(self.dir_out_im, phase, os.path.split(im_path)[-1])
+                    copyfile(im_path, dst)
+
             # Save
-            name = 'animalpose_keypoints_' + str(self.n_kps) + '_'
+            name = 'animal_keypoints_' + str(self.n_kps) + '_'
             if self.sample:
                 name = name + 'sample_'
 
-            path_json = os.path.join(self.dir_out, name + phase + '.json')
+            path_json = os.path.join(self.dir_out_ann, name + phase + '.json')
             with open(path_json, 'w') as outfile:
                 json.dump(self.json_file, outfile)
             print(f'Phase:{phase}')
             print(f'Average number of keypoints labelled: {sum(self.cnt_kps) / cnt_instances:.1f} / {self.n_kps}')
             print(f'Saved {cnt_instances} instances over {cnt_images} images ')
             print(f'JSON PATH:  {path_json}')
-            histogram(self.cnt_kps)
+            # histogram(self.cnt_kps)
 
     def _process_image(self, im_path, im_id):
         """Update image field in json file"""
