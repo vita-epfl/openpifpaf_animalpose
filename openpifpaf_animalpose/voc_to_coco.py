@@ -92,6 +92,11 @@ class VocToCoco:
                     dst = os.path.join(self.dir_out_im, phase, os.path.split(im_path)[-1])
                     copyfile(im_path, dst)
 
+                # Count
+                if (cnt_images % 1000) == 0:
+                    text = ' and copied to new directory' if self.split_images else ''
+                    print(f'Parsed {cnt_images} images' + text)
+
             # Save
             name = 'animal_keypoints_' + str(self.n_kps) + '_'
             if self.sample:
