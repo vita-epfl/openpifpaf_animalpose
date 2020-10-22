@@ -13,7 +13,9 @@ import glob
 import argparse
 import time
 import json
+import random
 from collections import defaultdict
+import shutil
 from shutil import copyfile
 import xml.etree.ElementTree as ET
 
@@ -71,26 +73,30 @@ class VocToCoco:
 
     def process(self):
         splits = self._split_train_val()
+        all_xml_paths = []
         for phase in ('train', 'val'):
-            paths = splits[phase]
+            metadata = splits[phase]
             if self.sample:
-                paths = paths[:50]
+                metadata = metadata[:50]
+            if self.split_images:
+                make_new_directory(os.path.join(self.dir_out_im, phase))
             cnt_images = 0
             cnt_instances = 0
             self.cnt_kps = [0] * len(ANIMAL_KEYPOINTS)
             self.initiate_json()  # Initiate json file at each phase
 
-            for xml_path in paths:
-                im_path, im_id = self._extract_filename(xml_path)
-                self._process_image(im_path, im_id)
+            for im_meta in metadata:
+                self._process_image(im_meta[0], im_meta[1])
                 cnt_images += 1
-                self._process_annotation(xml_path, im_id)
-                cnt_instances += 1
+                for xml_path in self._find_annotations(im_meta):
+                    self._process_annotation(xml_path, im_meta[1])
+                    cnt_instances += 1
+                    all_xml_paths.append(xml_path)
 
                 # Split the image in a new folder
                 if self.split_images:
-                    dst = os.path.join(self.dir_out_im, phase, os.path.split(im_path)[-1])
-                    copyfile(im_path, dst)
+                    dst = os.path.join(self.dir_out_im, phase, os.path.split(im_meta[0])[-1])
+                    copyfile(im_meta[0], dst)
 
                 # Count
                 if (cnt_images % 1000) == 0:
@@ -176,6 +182,34 @@ class VocToCoco:
         kps_out = list(kps_out.reshape((-1,)))
         return kps_out, cnt
 
+    def _split_train_val(self, val_n=800):
+        """
+        Random train val split: create im_meta:
+        im_path
+        im_id,
+        cat
+        folder
+        """
+        np.random.seed(1)
+        im_data = []
+        for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
+            folder_name = os.path.basename(folder)
+            dir_ann = os.path.join(folder, 'annotations')
+            for cat in _CATEGORIES:
+                xml_paths = glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml'))
+                for xml_path in xml_paths:
+                    im_path, im_id = self._extract_filename(xml_path)
+                    im_data.append((im_path, im_id, cat, folder_name))
+        cnt_ann = len(im_data)
+        im_data = list(set(im_data))  # Remove duplicates
+        cnt_im = len(im_data)
+        train_n = cnt_im - val_n
+        random.shuffle(im_data)
+        splits = {'train': im_data[:train_n], 'val': im_data[train_n:]}
+        print(f'Split {train_n} into training images and {val_n} validation ones')
+        print(f'Read {cnt_ann}  annotations')
+        return splits
+
     def _extract_filename(self, xml_path):
         """
         Manage all the differences between the 2 annotated parts and all the exceptions of Part 2
@@ -192,7 +226,7 @@ class VocToCoco:
             basename = splits[0] + '_' + splits[1]
             ext = '.jpg'
             im_path = os.path.join(im_dir, basename + ext)
-            im_id = int(splits[1])
+            im_id = int(str(int(splits[0])) + str(int(splits[1])))
         else:
             basename = os.path.splitext(sub_dirs[-1])[0]
             num = int(basename[2:])
@@ -206,6 +240,13 @@ class VocToCoco:
             im_path = os.path.join(im_dir, cat, basename + ext)
         assert isinstance(im_id, int), "im id is not numeric"
         return im_path, im_id
+
+    def _find_annotations(self, meta):
+        root = os.path.join(self.dir_dataset, meta[3], 'annotations', meta[2],
+                            os.path.splitext(os.path.basename(meta[0]))[0])
+        xml_paths = glob.glob(root + '[_,.]*xml')  # Avoid duplicates of the form cow13 cow130
+        assert xml_paths, "No annotations, expected at least one"
+        return xml_paths
 
     def initiate_json(self):
         """
@@ -223,21 +264,6 @@ class VocToCoco:
         self.json_file["images"] = []
         self.json_file["annotations"] = []
 
-    def _split_train_val(self):
-        """Random train val split"""
-        val_n = 1117
-        np.random.seed(1)
-        paths = []
-        for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
-            dir_ann = os.path.join(folder, 'annotations')
-            for cat in _CATEGORIES:
-                paths.extend(glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml')))
-        train_n = len(paths) - val_n
-        paths = np.asarray(paths)
-        np.random.shuffle(paths)
-        splits = {'train': paths[:train_n].tolist(), 'val': paths[train_n:].tolist()}
-        return splits
-
 
 def histogram(cnt_kps):
     bins = np.arange(len(cnt_kps))
@@ -247,6 +273,14 @@ def histogram(cnt_kps):
     plt.xticks(np.arange(len(cnt_kps), step=5))
     plt.show()
     plt.close()
+
+
+def make_new_directory(dir_out):
+    """Remove the output directory if already exists (avoid residual txt files)"""
+    if os.path.exists(dir_out):
+        shutil.rmtree(dir_out)
+    os.makedirs(dir_out)
+    print("!Created empty output directory!".format(dir_out))
 
 
 def main():
