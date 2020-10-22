@@ -46,6 +46,8 @@ def cli():
                         help='Whether to only process the first 50 images')
     parser.add_argument('--split_images', action='store_true',
                         help='Whether to copy images into train val split folder')
+    parser.add_argument('--histogram', action='store_true',
+                        help='Whether to show keypoints histogram')
     args = parser.parse_args()
     return args
 
@@ -70,6 +72,7 @@ class VocToCoco:
         assert os.path.isdir(self.dir_out_ann), "Annotations directory not found"
         self.sample = args.sample
         self.split_images = args.split_images
+        self.histogram = args.histogram
 
     def process(self):
         splits = self._split_train_val()
@@ -115,7 +118,8 @@ class VocToCoco:
             print(f'Average number of keypoints labelled: {sum(self.cnt_kps) / cnt_instances:.1f} / {self.n_kps}')
             print(f'Saved {cnt_instances} instances over {cnt_images} images ')
             print(f'JSON PATH:  {path_json}')
-            # histogram(self.cnt_kps)
+            if self.histogram:
+                histogram(self.cnt_kps)
 
     def _process_image(self, im_path, im_id):
         """Update image field in json file"""
