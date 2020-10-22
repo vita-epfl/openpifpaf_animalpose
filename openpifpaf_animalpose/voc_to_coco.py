@@ -194,7 +194,7 @@ class VocToCoco:
         cat
         folder
         """
-        np.random.seed(1)
+        random.seed(1)
         im_data = []
         for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
             folder_name = os.path.basename(folder)
