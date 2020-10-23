@@ -43,6 +43,7 @@ data-mscoco
 *.pkl.*
 *.log
 *.zip
+outputs
 outputs/
 shared/
 decoder.prof
