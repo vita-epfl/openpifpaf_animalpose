@@ -186,7 +186,7 @@ class VocToCoco:
         kps_out = list(kps_out.reshape((-1,)))
         return kps_out, cnt
 
-    def _split_train_val(self, val_n=800):
+    def _split_train_val(self, train_n=4000):
         """
         Random train val split: create im_meta:
         im_path
@@ -207,7 +207,7 @@ class VocToCoco:
         cnt_ann = len(im_data)
         im_data = list(set(im_data))  # Remove duplicates
         cnt_im = len(im_data)
-        train_n = cnt_im - val_n
+        val_n = cnt_im - train_n
         random.shuffle(im_data)
         splits = {'train': im_data[:train_n], 'val': im_data[train_n:]}
         print(f'Split {train_n} into training images and {val_n} validation ones')
