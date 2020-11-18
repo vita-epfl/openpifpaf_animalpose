@@ -10,5 +10,5 @@
 pattern=$1
 shift
 
-srun singularity exec --bind /scratch/izar/bertoni --nv ../pytorch_latest.sif \
+srun singularity exec --bind /scratch/izar /work/vita --nv ../pytorch_latest.sif \
   /bin/bash -c "source ../.venv/apollo/bin/activate && find outputs/ -name \"$pattern\" -exec python3 -m openpifpaf.eval --checkpoint {} $(printf "%s " "$@") \;"
