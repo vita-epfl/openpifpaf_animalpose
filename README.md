@@ -17,10 +17,12 @@ Download openpifpaf, switch to dev branch and install it with:
     * soft link output directory, which needs to be called outputs
     * soft link to animalpose dataset
     * create apollo-coco directory with `images/train`, `images/val`, `annotations` subdirectories and soft link them.
+
     
     
 ## Preprocess Dataset
-`python -m openpifpaf_animalpose.voc_to_coco` 
+`python -m openpifpaf_animalpose.voc_to_coco`
+Use the argument `--split_images` to create a training val split copying original images in the new folders
 
 ## Show poses
 `python -m openpifpaf_apollocar3d.utils.constants`
