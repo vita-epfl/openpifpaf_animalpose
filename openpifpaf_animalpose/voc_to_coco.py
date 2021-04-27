@@ -65,11 +65,21 @@ class VocToCoco:
         :param dir_dataset: Original dataset directory
         :param dir_out: Processed dataset directory
         """
-        self.dir_dataset = dir_dataset
+
+        # Set directories
+        self.dir_images_1 = os.path.join(dir_dataset, 'TrainVal', 'VOCdevkit', 'VOC2011', 'JPEGImages')
+        self.dir_images_2 = os.path.join(dir_dataset, 'animalpose_image_part2')
+        self.dir_annotations_1 = os.path.join(dir_dataset, 'PASCAL2011_animal_annotation')
+        self.dir_annotations_2 = os.path.join(dir_dataset, 'animalpose_anno2')
+        assert os.path.isdir(self.dir_images_1), self.dir_images_1 + " not found"
+        assert os.path.isdir(self.dir_images_2), self.dir_images_2 + " not found"
+        assert os.path.isdir(self.dir_annotations_1), self.dir_annotations_1 + " not found"
+        assert os.path.isdir(self.dir_annotations_2), self.dir_annotations_2 + " not found"
         self.dir_out_im = os.path.join(dir_out, 'images')
         self.dir_out_ann = os.path.join(dir_out, 'annotations')
-        assert os.path.isdir(self.dir_out_im), "Images output directory not found"
-        assert os.path.isdir(self.dir_out_ann), "Annotations directory not found"
+        os.makedirs(self.dir_out_im, exist_ok=True)
+        os.makedirs(self.dir_out_ann, exist_ok=True)
+
         self.sample = args.sample
         self.split_images = args.split_images
         self.histogram = args.histogram
@@ -195,12 +205,14 @@ class VocToCoco:
         folder
         """
         random.seed(1)
+        folders = glob.glob(self.dir_annotations_1) + glob.glob(self.dir_annotations_2)
+        assert folders, "annotation folders are empty"
+
         im_data = []
-        for folder in glob.glob(os.path.join(self.dir_dataset, 'part*')):
+        for folder in folders:
             folder_name = os.path.basename(folder)
-            dir_ann = os.path.join(folder, 'annotations')
             for cat in _CATEGORIES:
-                xml_paths = glob.glob(os.path.join(dir_ann, cat + os.sep + '*.xml'))
+                xml_paths = glob.glob(os.path.join(folder, cat + os.sep + '*.xml'))
                 for xml_path in xml_paths:
                     im_path, im_id = self._extract_filename(xml_path)
                     im_data.append((im_path, im_id, cat, folder_name))

@@ -1,16 +1,34 @@
 # openpifpaf_apollocar3d
 
+
 ## Setup
+
+### Dataset conversion
+Download VOC dataset and the new images from the AnimalPose dataset and their annotations
+```sh
+pip install gdown
+gdown https://drive.google.com/uc\?id\=1UkZB-kHg4Eijcb2yRWVN94LuMJtAfjEI
+gdown https://drive.google.com/uc\?id\=1zjYczxVd2i8bl6QAqUlasS5LoZcQQu8b
+gdown https://drive.google.com/uc\?id\=1MDgiGMHEUY0s6w3h9uP9Ovl7KGQEDKhJ`
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2011/VOCtrainval_25-May-2011.tar
+tar -xvf keypoint_image_part2.tar.gz
+tar -xvf keypoint_anno_part2.tar.gz
+tar -xvf keypoint_anno_part1.tar.gz
+tar -xvf VOCtrainval_25-May-2011.tar
+rm keypoint_*.tar.gz
+rm VOCtrainval_25-May-2011.tar
+```
+
+
 Download openpifpaf, switch to dev branch and install it with:
 
 `pip3 install --editable '.[dev,train,test]`
 
 `pip3 install pandas`
 
-`pip3 install itermplot`
 
 (in case CUDA 9 as driver: 
-` pip install torch==1.7.0+cu92 torchvision==0.8.1+cu92 -f https://download.pytorch.org/whl/torch_stable.html`)
+` pip install torch==1.7.1+cu92 torchvision==0.8.2+cu92 -f https://download.pytorch.org/whl/torch_stable.html`)
 
 * Download openpifpaf_animalpose, and create the following directories:
     * `mkdir data`
