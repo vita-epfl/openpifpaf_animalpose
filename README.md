@@ -2,6 +2,7 @@
 
 
 ## Setup
+Install openpifpaf
 
 ### Dataset conversion
 Download VOC dataset and the new images from the AnimalPose dataset and their annotations
@@ -19,12 +20,6 @@ rm keypoint_*.tar.gz
 rm VOCtrainval_25-May-2011.tar
 ```
 
-
-Download openpifpaf, switch to dev branch and install it with:
-
-`pip3 install --editable '.[dev,train,test]`
-
-`pip3 install pandas`
 
 
 (in case CUDA 9 as driver: 

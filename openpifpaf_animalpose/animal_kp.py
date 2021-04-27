@@ -29,11 +29,6 @@ class AnimalKp(DataModule):
     Adapted from the standard CocoKp class to work as external plugin
     """
 
-    # cli configurable (TODO)
-    _test2017_annotations = 'data-mscoco/annotations/image_info_test2017.json'
-    _testdev2017_annotations = 'data-mscoco/annotations/image_info_test-dev2017.json'
-    _test2017_image_dir = 'data-mscoco/images/test2017/'
-
     train_annotations = 'data/animalpose/annotations/animal_keypoints_20_train.json'
     val_annotations = 'data/animalpose/annotations/animal_keypoints_20_val.json'
     eval_annotations = val_annotations
