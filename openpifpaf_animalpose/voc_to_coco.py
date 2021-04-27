@@ -44,8 +44,6 @@ def cli():
                         help='where to save xml annotations and output json ')
     parser.add_argument('--sample', action='store_true',
                         help='Whether to only process the first 50 images')
-    parser.add_argument('--split_images', action='store_true',
-                        help='Whether to copy images into train val split folder')
     parser.add_argument('--histogram', action='store_true',
                         help='Whether to show keypoints histogram')
     args = parser.parse_args()
@@ -67,6 +65,7 @@ class VocToCoco:
         """
 
         # Set directories
+        self.dir_dataset = dir_dataset
         self.dir_images_1 = os.path.join(dir_dataset, 'TrainVal', 'VOCdevkit', 'VOC2011', 'JPEGImages')
         self.dir_images_2 = os.path.join(dir_dataset, 'animalpose_image_part2')
         self.dir_annotations_1 = os.path.join(dir_dataset, 'PASCAL2011_animal_annotation')
@@ -79,9 +78,12 @@ class VocToCoco:
         self.dir_out_ann = os.path.join(dir_out, 'annotations')
         os.makedirs(self.dir_out_im, exist_ok=True)
         os.makedirs(self.dir_out_ann, exist_ok=True)
+        assert not os.listdir(self.dir_out_im), "Empty image directory to avoid to avoid issues for random seeds"
+        assert not os.listdir(self.dir_out_ann), "Empty ann directory to avoid to avoid issues for random seeds"
+        os.makedirs(os.path.join(self.dir_out_im, 'train'))
+        os.makedirs(os.path.join(self.dir_out_im, 'val'))
 
         self.sample = args.sample
-        self.split_images = args.split_images
         self.histogram = args.histogram
 
     def process(self):
@@ -91,8 +93,6 @@ class VocToCoco:
             metadata = splits[phase]
             if self.sample:
                 metadata = metadata[:50]
-            if self.split_images:
-                make_new_directory(os.path.join(self.dir_out_im, phase))
             cnt_images = 0
             cnt_instances = 0
             self.cnt_kps = [0] * len(ANIMAL_KEYPOINTS)
@@ -101,20 +101,18 @@ class VocToCoco:
             for im_meta in metadata:
                 self._process_image(im_meta[0], im_meta[1])
                 cnt_images += 1
-                for xml_path in self._find_annotations(im_meta):
+                for xml_path in self._find_annotation(im_meta):
                     self._process_annotation(xml_path, im_meta[1])
                     cnt_instances += 1
                     all_xml_paths.append(xml_path)
 
                 # Split the image in a new folder
-                if self.split_images:
-                    dst = os.path.join(self.dir_out_im, phase, os.path.split(im_meta[0])[-1])
-                    copyfile(im_meta[0], dst)
+                dst = os.path.join(self.dir_out_im, phase, os.path.split(im_meta[0])[-1])
+                copyfile(im_meta[0], dst)
 
                 # Count
                 if (cnt_images % 1000) == 0:
-                    text = ' and copied to new directory' if self.split_images else ''
-                    print(f'Parsed {cnt_images} images' + text)
+                    print(f'Parsed {cnt_images} images' + ' and copied to new directory')
 
             # Save
             name = 'animal_keypoints_' + str(self.n_kps) + '_'
@@ -233,17 +231,15 @@ class VocToCoco:
         path = os.path.normpath(xml_path)
         sub_dirs = path.split(os.sep)
         cat = sub_dirs[-2]
-        folder = sub_dirs[-4]
-        im_dir = os.path.join(*sub_dirs[:-3], 'images')
-        assert folder in ('part1', 'part2')
+        folder = sub_dirs[-3]
 
-        if folder == 'part1':
+        if folder == os.path.basename(self.dir_annotations_1):
             splits = os.path.splitext(sub_dirs[-1])[0].split(sep='_')
             basename = splits[0] + '_' + splits[1]
             ext = '.jpg'
-            im_path = os.path.join(im_dir, basename + ext)
+            im_path = os.path.join(self.dir_images_1, basename + ext)
             im_id = int(str(int(splits[0])) + str(int(splits[1])))
-        else:
+        elif folder == os.path.basename(self.dir_annotations_2):
             basename = os.path.splitext(sub_dirs[-1])[0]
             num = int(basename[2:])
             im_id = int(str(999) + str(self.map_cat[cat]) + basename[2:])
@@ -253,13 +249,15 @@ class VocToCoco:
                 ext = '.jpg'
             else:
                 ext = '.jpeg'
-            im_path = os.path.join(im_dir, cat, basename + ext)
+            im_path = os.path.join(self.dir_images_2, cat, basename + ext)
+        else:
+            raise FileNotFoundError
         assert isinstance(im_id, int), "im id is not numeric"
         return im_path, im_id
 
-    def _find_annotations(self, meta):
-        root = os.path.join(self.dir_dataset, meta[3], 'annotations', meta[2],
-                            os.path.splitext(os.path.basename(meta[0]))[0])
+    def _find_annotation(self, meta):
+        im_path, im_id, cat, ann_folder = meta
+        root = os.path.join(self.dir_dataset, ann_folder, cat, os.path.splitext(os.path.basename(im_path))[0])
         xml_paths = glob.glob(root + '[_,.]*xml')  # Avoid duplicates of the form cow13 cow130
         assert xml_paths, "No annotations, expected at least one"
         return xml_paths
@@ -289,14 +287,6 @@ def histogram(cnt_kps):
     plt.xticks(np.arange(len(cnt_kps), step=5))
     plt.show()
     plt.close()
-
-
-def make_new_directory(dir_out):
-    """Remove the output directory if already exists (avoid residual txt files)"""
-    if os.path.exists(dir_out):
-        shutil.rmtree(dir_out)
-    os.makedirs(dir_out)
-    print("!Created empty output directory!".format(dir_out))
 
 
 def main():
