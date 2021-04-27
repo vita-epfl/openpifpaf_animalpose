@@ -156,14 +156,6 @@ class AnimalKp(DataModule):
 
         # evaluation
         cls.eval_annotation_filter = args.coco_eval_annotation_filter  # the destination is for coco
-        if args.animal_eval_test2017:
-            cls.eval_image_dir = cls._test2017_image_dir
-            cls.eval_annotations = cls._test2017_annotations
-            cls.annotation_filter = False
-        if args.animal_eval_testdev2017:
-            cls.eval_image_dir = cls._test2017_image_dir
-            cls.eval_annotations = cls._testdev2017_annotations
-            cls.annotation_filter = False
         cls.eval_long_edge = args.coco_eval_long_edge
         cls.eval_orientation_invariant = args.coco_eval_orientation_invariant
         cls.eval_extended_scale = args.coco_eval_extended_scale

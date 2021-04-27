@@ -15,13 +15,19 @@ import time
 import json
 import random
 from collections import defaultdict
-import shutil
 from shutil import copyfile
 import xml.etree.ElementTree as ET
 
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
+
+try:
+    import matplotlib.pyplot as PLT
+except ModuleNotFoundError as err:
+    if err.name != 'matplotlib':
+        raise err
+    PLT = None
+
 
 from .constants import _CATEGORIES, ANIMAL_KEYPOINTS, ALTERNATIVE_NAMES, ANIMAL_SKELETON
 
@@ -152,7 +158,6 @@ class VocToCoco:
         assert len(box_obj) <= 1, "multiple elements in a single annotation file not supported"
 
         x_min = round(float((box_obj[0].attrib['xmin']))) - 1
-
         width = round(float(box_obj[0].attrib['width']))
         height = round(float(box_obj[0].attrib['height']))
         try:
@@ -177,7 +182,6 @@ class VocToCoco:
             'num_keypoints': num,
             'keypoints': kps,
             'segmentation': []})
-        return None
 
     def _process_keypoint(self, kps_list):
         """Extract single keypoint from XML"""
@@ -251,12 +255,12 @@ class VocToCoco:
                 ext = '.jpeg'
             im_path = os.path.join(self.dir_images_2, cat, basename + ext)
         else:
-            raise FileNotFoundError
+            raise Exception(folder + " folder not found")
         assert isinstance(im_id, int), "im id is not numeric"
         return im_path, im_id
 
     def _find_annotation(self, meta):
-        im_path, im_id, cat, ann_folder = meta
+        im_path, _, cat, ann_folder = meta
         root = os.path.join(self.dir_dataset, ann_folder, cat, os.path.splitext(os.path.basename(im_path))[0])
         xml_paths = glob.glob(root + '[_,.]*xml')  # Avoid duplicates of the form cow13 cow130
         assert xml_paths, "No annotations, expected at least one"
@@ -280,13 +284,15 @@ class VocToCoco:
 
 
 def histogram(cnt_kps):
+    if PLT is None:
+        raise Exception('please install matplotlib')
     bins = np.arange(len(cnt_kps))
     data = np.array(cnt_kps)
-    plt.figure()
-    plt.bar(bins, data)
-    plt.xticks(np.arange(len(cnt_kps), step=5))
-    plt.show()
-    plt.close()
+    PLT.figure()
+    PLT.bar(bins, data)
+    PLT.xticks(np.arange(len(cnt_kps), step=5))
+    PLT.show()
+    PLT.close()
 
 
 def main():
