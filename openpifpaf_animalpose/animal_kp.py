@@ -166,9 +166,8 @@ class AnimalKp(DataModule):
             raise Exception('have to use --write-predictions for this dataset')
 
     def _preprocess(self):
-        encoders = (encoder.Cif(self.head_metas[0],
-                                bmin=self.b_min),
-                    encoder.Caf(self.head_metas[1]))
+        encoders = (encoder.Cif(self.head_metas[0], bmin=self.b_min),
+                    encoder.Caf(self.head_metas[1], bmin=self.b_min))
 
         if not self.augmentation:
             return transforms.Compose([
