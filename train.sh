@@ -9,4 +9,4 @@
 
 module load gcc python cuda
 source ../.venv/animal/bin/activate
-srun /bin/bash -c "time python3 -m torch.distributed.launch --nproc_per_node=4 -m openpifpaf.train $(printf "%s " "$@")"
+srun /bin/bash -c "time python3 -m openpifpaf.train $(printf "%s " "$@")"
