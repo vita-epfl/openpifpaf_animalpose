@@ -3,10 +3,10 @@
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task 40
 #SBATCH --mem 96G
-#SBATCH --time 10:00:00
+#SBATCH --time 48:00:00
 #SBATCH --account=vita
-#SBATCH --gres gpu:1
+#SBATCH --gres gpu:2
 
 module load gcc python cuda
 source ../.venv/animal/bin/activate
-srun /bin/bash -c "python3 -m openpifpaf_animalpose.voc_to_coco"
+srun /bin/bash -c "time python3 -m openpifpaf_animalpose.voc_to_coco"
