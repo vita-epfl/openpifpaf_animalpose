@@ -7,10 +7,13 @@ Install openpifpaf
 ### Dataset conversion
 Download VOC dataset and the new images from the AnimalPose dataset and their annotations
 ```sh
+mkdir data
+mkdir data/animalpose
+cd data/animalpose
 pip install gdown
 gdown https://drive.google.com/uc\?id\=1UkZB-kHg4Eijcb2yRWVN94LuMJtAfjEI
 gdown https://drive.google.com/uc\?id\=1zjYczxVd2i8bl6QAqUlasS5LoZcQQu8b
-gdown https://drive.google.com/uc\?id\=1MDgiGMHEUY0s6w3h9uP9Ovl7KGQEDKhJ`
+gdown https://drive.google.com/uc\?id\=1MDgiGMHEUY0s6w3h9uP9Ovl7KGQEDKhJ
 wget http://host.robots.ox.ac.uk/pascal/VOC/voc2011/VOCtrainval_25-May-2011.tar
 tar -xvf keypoint_image_part2.tar.gz
 tar -xvf keypoint_anno_part2.tar.gz
