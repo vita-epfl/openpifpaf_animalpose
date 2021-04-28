@@ -8,5 +8,5 @@
 #SBATCH --gres gpu:2
 
 module load gcc python cuda
-
-srun /bin/bash -c "source ../.venv/animal/bin/activate && time CUDA_VISIBLE_DEVICES=0,1 python3 -m openpifpaf.train $(printf "%s " "$@")"
+source ../.venv/animal/bin/activate
+srun /bin/bash -c "time python3 -m torch.distributed.launch --nproc_per_node=4 -m openpifpaf.train $(printf "%s " "$@")"
