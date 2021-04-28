@@ -9,4 +9,4 @@
 
 module load gcc python cuda
 source ../.venv/animal/bin/activate
-python3 -m openpifpaf_animalpose.voc_to_coco
+srun /bin/bash -c "python3 -m openpifpaf_animalpose.voc_to_coco"
