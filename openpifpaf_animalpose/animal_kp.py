@@ -18,10 +18,11 @@ except ImportError:
 from openpifpaf.datasets import DataModule
 from openpifpaf import encoder, headmeta, metric, transforms
 from openpifpaf.datasets import collate_images_anns_meta, collate_images_targets_meta
+from openpifpaf.plugins.coco import CocoDataset as CocoLoader
 
 from .constants import ANIMAL_KEYPOINTS, ANIMAL_SKELETON, HFLIP, \
     ANIMAL_SIGMAS, ANIMAL_POSE, ANIMAL_CATEGORIES, ANIMAL_SCORE_WEIGHTS
-from .dataloader import Animal
+
 
 
 class AnimalKp(DataModule):
@@ -212,7 +213,7 @@ class AnimalKp(DataModule):
         ])
 
     def train_loader(self):
-        train_data = Animal(
+        train_data = CocoLoader(
             image_dir=self.train_image_dir,
             ann_file=self.train_annotations,
             preprocess=self._preprocess(),
@@ -226,7 +227,7 @@ class AnimalKp(DataModule):
             collate_fn=collate_images_targets_meta)
 
     def val_loader(self):
-        val_data = Animal(
+        val_data = CocoLoader(
             image_dir=self.val_image_dir,
             ann_file=self.val_annotations,
             preprocess=self._preprocess(),
@@ -290,7 +291,7 @@ class AnimalKp(DataModule):
         ])
 
     def eval_loader(self):
-        eval_data = Animal(
+        eval_data = CocoLoader(
             image_dir=self.eval_image_dir,
             ann_file=self.eval_annotations,
             preprocess=self._eval_preprocess(),
