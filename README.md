@@ -2,7 +2,12 @@
 
 
 ## Setup
-Install openpifpaf
+```sh
+pip install openpifpaf
+pip install gdown
+pip install scipy
+pip install thop
+```
 
 ### Dataset conversion
 Download VOC dataset and the new images from the AnimalPose dataset and their annotations
